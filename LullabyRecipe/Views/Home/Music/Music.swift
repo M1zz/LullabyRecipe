@@ -9,18 +9,19 @@ import SwiftUI
 import AVKit
 
 struct MusicView: View {
+    @StateObject var viewModel = MusicViewModel.shared
     
-    @StateObject var viewModel = MusicViewModel()
     @State var animatedValue : CGFloat = 55
     @State var maxWidth = UIScreen.main.bounds.width / 2.2
     @State var showVolumeControl: Bool = false
     
+    @ObservedObject var timer = TimerManager.shared
+
     var data: MixedSound
     
     @Binding var audioVolumes: (baseVolume: Float, melodyVolume: Float, naturalVolume: Float)
     
     var body: some View {
-        
         ZStack(alignment: .top) {
             
             ColorPalette.background.color.ignoresSafeArea()
@@ -55,9 +56,9 @@ struct MusicView: View {
             .onAppear {
                 viewModel.fetchData(data: data)
             }
-            .onDisappear {
-                viewModel.stop()
-            }
+//            .onDisappear {
+//                viewModel.stop()
+//            }
         }
         .sheet(isPresented: $showVolumeControl,
                content: {
@@ -120,7 +121,6 @@ struct MusicView: View {
             viewModel.play()
             viewModel.isPlaying.toggle()
         }, label: {
-            
             HStack {
                 (Text("\(viewModel.isPlaying ? "Pause " : "Play ")").bold() + Text(Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")))
                     .frame(minWidth: 0,
@@ -130,13 +130,18 @@ struct MusicView: View {
                     .foregroundColor(.white)
                     .cornerRadius(17)
                     .font(.system(size: 16))
+                dummyTimerButton
             }
         })
-        
-        //        }
-        //        .frame(width: maxWidth,
-        //               height: maxWidth)
-        //        .padding(.top,30)
+    }
+    
+    var dummyTimerButton: some View {
+        HStack {
+            NavigationLink(destination: DummyTimerView()) {
+                Image(systemName: "timer")
+            }
+            Text("\(timer.getRemainedSecond())")
+        }
     }
     
     @ViewBuilder
@@ -180,17 +185,24 @@ struct MusicView: View {
     }
 }
 
-struct Music_Previews: PreviewProvider {
-    static var previews: some View {
-        let dummyMixedSound = MixedSound(id: 3,
-                                         name: "test4",
-                                         baseSound: dummyBaseSound,
-                                         melodySound: dummyMelodySound,
-                                         naturalSound: dummyNaturalSound,
-                                         imageName: "r1")
-    
-//        MusicView(data: dummyMixedSound)
+struct MusicViewForBinding: View {
+    @State var audioVolumes = (baseVolume: Float(1.0), melodyVolume: Float(1.0), naturalVolume: Float(1.0))
+
+    let dummyMixedSound = MixedSound(id: 3,
+                                     name: "test4",
+                                     baseSound: dummyBaseSound,
+                                     melodySound: dummyMelodySound,
+                                     naturalSound: dummyNaturalSound,
+                                     imageName: "r1")
+    var body: some View {
+        MusicView(data: dummyMixedSound, audioVolumes: $audioVolumes)
     }
 }
 
-
+struct Music_Previews: PreviewProvider {
+    static var previews: some View {
+        NavigationView {
+            MusicViewForBinding()
+        }
+    }
+}
